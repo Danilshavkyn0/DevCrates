@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TechUnboxed: CS2 Style</title>
+    <style>
+        :root {
+            --bg: #0a0a0a;
+            --card-bg: #141414;
+            --card-border: #2a2a2a;
+            --common: #b5b5b5;
+            --rare: #3498db;
+            --epic: #9b59b6;
+            --legendary: #f1c40f;
+            --accent: #ff8c00;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        h1 { color: var(--accent); letter-spacing: 2px; margin-bottom: 10px; }
+        .sub-header { color: #777; margin-bottom: 40px; }
+
+        /* --- CS2 STYLE SPINNER --- */
+        #spinner-container {
+            width: 100%;
+            max-width: 800px;
+            height: 160px;
+            background: #000;
+            border-top: 2px solid var(--accent);
+            border-bottom: 2px solid var(--accent);
+            position: relative;
+            overflow: hidden; /* Hides the long track */
+            box-shadow: 0 0 30px rgba(255, 140, 0, 0.2);
+        }
+
+        /* The vertical line in the middle */
+        #center-marker {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: #ffdf00;
+            transform: translateX(-50%);
+            z-index: 10;
+            box-shadow: 0 0 10px #ffdf00;
+        }
+
+        /* The long track that slides */
+        #spinner-track {
+            display: flex;
+            height: 100%;
+            /* The transition handles the smooth slowing down effect */
+            transition: transform 6s cubic-bezier(0.1, 1, 0.3, 1); 
+            will-change: transform;
+        }
+
+        /* Individual items in the spinner track */
+        .spinner-card {
+            width: 130px; /* Fixed width for calculation */
+            height: 100%;
+            flex-shrink: 0;
+            border-right: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #111;
+            position: relative;
+        }
+
+        .spinner-card img {
+            width: 90px;
+            height: 90px;
+            object-fit: contain;
+        }
+
+        /* The colored bar at the bottom of spinner cards */
+        .rarity-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 8px;
+        }
+
+        /* --- GAME CONTROLS & RESULT --- */
+        #controls-area {
+            text-align: center;
+            margin-top: 30px;
+            height: 150px; /* Fixed height to prevent jumping */
+        }
+
+        #result-info {
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+        
+        #result-info.visible { opacity: 1; }
+
+        .result-name { font-size: 1.8rem; font-weight: bold; margin: 10px 0 5px 0; }
+        .result-rarity { text-transform: uppercase; letter-spacing: 1px; font-weight: bold; }
+
+        button {
+            background: linear-gradient(45deg, var(--accent), #e67e00);
+            color: black;
+            border: none;
+            padding: 15px 50px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: 0.2s;
+            text-transform: uppercase;
+            box-shadow: 0 5px 15px rgba(255, 140, 0, 0.3);
+        }
+
+        button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(255, 140, 0, 0.5); }
+        button:disabled { background: #444; color: #888; cursor: not-allowed; box-shadow: none; }
+
+        /* --- INVENTORY --- */
+        #inventory-container {
+            margin-top: 50px;
+            width: 100%;
+            max-width: 800px;
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid var(--card-border);
+        }
+
+        .inventory-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .inv-item {
+            background: #0a0a0a;
+            border: 1px solid #333;
+            border-radius: 6px;
+            overflow: hidden;
+            transition: transform 0.2s;
+            text-align: center;
+        }
+        
+        .inv-item:hover { transform: scale(1.05); border-color: #555; }
+
+        .inv-img-container { width: 100%; height: 80px; padding: 10px; box-sizing: border-box; }
+        .inv-img-container img { width: 100%; height: 100%; object-fit: contain; }
+        .inv-name { font-size: 0.75rem; padding: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: #1a1a1a;}
+
+        /* Rarity Colors */
+        .bg-common { background: var(--common); } .txt-common { color: var(--common); }
+        .bg-rare { background: var(--rare); } .txt-rare { color: var(--rare); }
+        .bg-epic { background: var(--epic); } .txt-epic { color: var(--epic); }
+        .bg-legendary { background: var(--legendary); box-shadow: 0 0 10px var(--legendary); } .txt-legendary { color: var(--legendary); text-shadow: 0 0 10px rgba(241, 196, 15, 0.5); }
+    </style>
+</head>
+<body>
+
+    <h1>TECH CASE SIMULATOR</h1>
+    <div class="sub-header">M5Stack & Flipper Zero Edition</div>
+    
+    <div id="spinner-container">
+        <div id="center-marker"></div>
+        <div id="spinner-track">
+            <div class="spinner-card"><div class="rarity-bar bg-common"></div></div>
+             <div class="spinner-card"><div class="rarity-bar bg-common"></div></div>
+             <div class="spinner-card"><div class="rarity-bar bg-common"></div></div>
+             <div class="spinner-card"><div class="rarity-bar bg-common"></div></div>
+             <div class="spinner-card"><div class="rarity-bar bg-common"></div></div>
+             <div class="spinner-card"><div class="rarity-bar bg-common"></div></div>
+        </div>
+    </div>
+
+    <div id="controls-area">
+        <button id="open-btn" onclick="startSpin()">OPEN CASE</button>
+        
+        <div id="result-info">
+            <div class="result-name" id="res-name">Item Name</div>
+            <div class="result-rarity" id="res-rarity">Rarity</div>
+        </div>
+    </div>
+
+    <div id="inventory-container">
+        <h3>INVENTORY COLLECTION</h3>
+        <div id="inventory-grid" class="inventory-grid">
+            </div>
+    </div>
+
+    <script>
+        // ============================================
+        // IMPORTANT: REPLACE THESE URLS WITH REAL ONES
+        // ============================================
+        // I'm using placehold.co so the code works instantly. 
+        // Find real transparent PNGs of these items for the best look.
+        const items = [
+            // COMMON (50%)
+            { name: "M5Stack Proto Module", rarity: "common", img: "https://placehold.co/150x150/333/b5b5b5?text=M5+Proto" },
+            { name: "Flipper Silicone Case", rarity: "common", img: "https://placehold.co/150x150/333/b5b5b5?text=Flipper+Case" },
+            { name: "M5 Atom Lite", rarity: "common", img: "https://placehold.co/150x150/333/b5b5b5?text=M5+Atom" },
+            { name: "Grove Cable Pack", rarity: "common", img: "https://placehold.co/150x150/333/b5b5b5?text=Grove+Cables" },
+            
+            // RARE (30%)
+            { name: "M5StickC Plus 2", rarity: "rare", img: "https://placehold.co/150x150/333/3498db?text=M5StickC+" },
+            { name: "Flipper WiFi Devboard", rarity: "rare", img: "https://placehold.co/150x150/333/3498db?text=WiFi+Board" },
+            { name: "M5Unit Cam Wi-Fi", rarity: "rare", img: "https://placehold.co/150x150/333/3498db?text=M5+Cam" },
+            
+            // EPIC (15%)
+            { name: "M5Stack Cardputer", rarity: "epic", img: "https://placehold.co/150x150/333/9b59b6?text=Cardputer" },
+            { name: "Flipper Ext. Antenna", rarity: "epic", img: "https://placehold.co/150x150/333/9b59b6?text=SubGHz+Ant" },
+            { name: "M5Stack Core2 Touch", rarity: "epic", img: "https://placehold.co/150x150/333/9b59b6?text=M5+Core2" },
+
+            // LEGENDARY (5%)
+            { name: "Flipper Zero White", rarity: "legendary", img: "https://placehold.co/150x150/333/f1c40f?text=Flipper+Zero" },
+            { name: "Flipper Zero Transp.", rarity: "legendary", img: "https://placehold.co/150x150/333/f1c40f?text=Flipper+Clear" },
+            { name: "M5Stack CoreS3", rarity: "legendary", img: "https://placehold.co/150x150/333/f1c40f?text=M5+CoreS3" }
+        ];
+
+        let inventory = JSON.parse(localStorage.getItem('techInvRealImg')) || [];
+        const track = document.getElementById('spinner-track');
+        const btn = document.getElementById('open-btn');
+        const resultInfo = document.getElementById('result-info');
+        const resName = document.getElementById('res-name');
+        const resRarity = document.getElementById('res-rarity');
+
+        // Animation Configuration
+        const CARD_WIDTH = 130; // Must match CSS .spinner-card width
+        const TOTAL_CARDS_IN_SPIN = 70;
+        const WIN_INDEX = 55; // The index the spinner stops on (must be less than TOTAL_CARDS)
+
+        function getRandomItem(forcedRarity = null) {
+            let pool;
+            if (forcedRarity) {
+                 pool = items.filter(i => i.rarity === forcedRarity);
+            } else {
+                const rand = Math.random() * 100;
+                if (rand < 5) pool = items.filter(i => i.rarity === 'legendary');
+                else if (rand < 20) pool = items.filter(i => i.rarity === 'epic');
+                else if (rand < 50) pool = items.filter(i => i.rarity === 'rare');
+                else pool = items.filter(i => i.rarity === 'common');
+            }
+            return pool[Math.floor(Math.random() * pool.length)];
+        }
+
+        function startSpin() {
+            // 1. Reset State
+            btn.disabled = true;
+            resultInfo.classList.remove('visible');
+            track.style.transition = 'none'; // Disable transition for instant reset
+            track.style.transform = 'translateX(0px)';
+            track.innerHTML = '';
+
+            // 2. Determine Winner
+            const winner = getRandomItem();
+
+            // 3. Build the Spinner Track
+            // We create a long list of random items, and insert the winner at WIN_INDEX
+            for (let i = 0; i < TOTAL_CARDS_IN_SPIN; i++) {
+                let item;
+                if (i === WIN_INDEX) {
+                    item = winner;
+                } else if (i === WIN_INDEX - 1 || i === WIN_INDEX + 1) {
+                    // Make items near the winner usually common/rare for contrast
+                     item = getRandomItem(Math.random() > 0.5 ? 'common' : 'rare');
+                } else {
+                    item = getRandomItem();
+                }
+
+                const card = document.createElement('div');
+                card.className = 'spinner-card';
+                card.innerHTML = `
+                    <img src="${item.img}" alt="${item.name}">
+                    <div class="rarity-bar bg-${item.rarity}"></div>
+                `;
+                track.appendChild(card);
+            }
+
+            // 4. Calculate spin distance
+            // We need to slide left so the WIN_INDEX card is centered.
+            // Container width is variable (max 800), so we calculate center dynamically.
+            const containerWidth = document.getElementById('spinner-container').offsetWidth;
+            const centerOffset = containerWidth / 2;
+            // Target position: Shift track left by N cards, then shift right to center the target card
+            const targetPosition = - (WIN_INDEX * CARD_WIDTH) + centerOffset - (CARD_WIDTH / 2);
+
+            // Random slight offset to make it look less robotic (lands slightly off-center)
+            const randomOffset = (Math.random() * 40) - 20; 
+            const finalPosition = targetPosition + randomOffset;
+
+            // 5. Trigger Animation (Force reflow first so browser accepts the reset)
+            track.offsetHeight; // Trigger reflow
+            track.style.transition = 'transform 6s cubic-bezier(0.15, 1, 0.3, 1)'; // CS2-ish easing
+            track.style.transform = `translateX(${finalPosition}px)`;
+
+            // 6. Handle Spin Finish
+            setTimeout(() => {
+                // Show results
+                resName.innerText = winner.name;
+                resName.className = `result-name txt-${winner.rarity}`;
+                resRarity.innerText = winner.rarity;
+                resRarity.className = `result-rarity txt-${winner.rarity}`;
+                resultInfo.classList.add('visible');
+
+                // Add to inventory
+                inventory.unshift(winner);
+                updateInventoryUI();
+                btn.disabled = false;
+            }, 6000); // Match transition duration
+        }
+
+        function updateInventoryUI() {
+            const grid = document.getElementById('inventory-grid');
+            grid.innerHTML = '';
+            inventory.forEach(item => {
+                const div = document.createElement('div');
+                div.className = `inv-item`;
+                div.innerHTML = `
+                    <div class="inv-img-container">
+                        <img src="${item.img}" alt="${item.name}">
+                    </div>
+                    <div class="inv-name txt-${item.rarity}">${item.name}</div>
+                    <div style="height:4px;" class="bg-${item.rarity}"></div>
+                `;
+                grid.appendChild(div);
+            });
+            localStorage.setItem('techInvRealImg', JSON.stringify(inventory));
+        }
+
+        // Initialize
+        updateInventoryUI();
+    </script>
+</body>
+</html>
